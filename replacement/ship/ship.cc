@@ -12,6 +12,14 @@
 #define SAMPLER_SET (256 * NUM_CPUS)
 #define SHCT_MAX 7
 
+void CACHE::get_victim_L2C(uint64_t L2victim) {	
+	return;
+}
+
+void CACHE::frm_InstructionCache(uint64_t L1Iblock){
+	return;
+}
+
 // sampler structure
 class SAMPLER_class
 {
@@ -50,6 +58,7 @@ void CACHE::initialize_replacement()
 
   sampler.emplace(this, SAMPLER_SET * NUM_WAY);
 }
+
 
 // find replacement victim
 uint32_t CACHE::find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK* current_set, uint64_t ip, uint64_t full_addr, uint32_t type)
