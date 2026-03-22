@@ -1,8 +1,3 @@
-#include <cstdint>
-#include <iostream>  // std::cout, std::endl
-#include <iomanip>   // std::hex, std::dec
-using namespace std;
-
 #ifndef SPP_H
 #define SPP_H
 

@@ -4,6 +4,8 @@
 #define L2C_VA_AMPM_LITE_MAX_DISTANCE 256
 #define L2C_VA_AMPM_LITE_PREFETCH_DEGREE 2
 
+void CACHE::prefetcher_cycle_operate() {}
+
 struct l2c_va_ampm_lite_region_t {
   uint64_t vpn;
   uint64_t access_map;

@@ -9,7 +9,6 @@
 #define LOOKAHEAD_ON
 #define GC_WIDTH 10
 #define GC_MAX ((1 << GC_WIDTH) - 1)
-#define L2C_MSHR_SIZE 32
 
 // defined at kpcp_util.cc
 /*
@@ -592,7 +591,7 @@ table[0].c_sig)); L2_PT_miss[cpu]++; L2_PT_access[cpu]++;
 */
 
 // TODO: from here
-uint32_t CACHE::prefetcher_cache_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type, uint32_t metadata_in)
+uint32_t CACHE::prefetcher_operate(uint64_t v_addr, uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type, uint32_t metadata_in)
 {
   // Check ST
   L2_ST_update(cpu, addr);
@@ -725,7 +724,7 @@ uint32_t CACHE::prefetcher_cache_operate(uint64_t addr, uint64_t ip, uint8_t cac
   return metadata_in;
 }
 
-uint32_t CACHE::prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in)
+uint32_t CACHE::prefetcher_cache_fill(uint64_t v_addr, uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in)
 {
   // L2 FILL
   uint64_t evicted_cl = evicted_addr >> LOG2_BLOCK_SIZE;

@@ -67,6 +67,11 @@ public:
 
   uint32_t get_set(uint64_t address);
   uint32_t get_way(uint64_t address, uint32_t set);
+  uint64_t get_instr_id();
+  void get_victim_L2C(uint64_t L2victim);
+  void getL2C_useful_PF(uint64_t useful_addr);
+  void frm_InstructionCache(uint64_t L1Iblock);
+  bool get_L2_Freq (uint32_t LLC_set, uint64_t LLC_signature);
 
   int invalidate_entry(uint64_t inval_addr);
   int prefetch_line(uint64_t pf_addr, bool fill_this_level, uint32_t prefetch_metadata);
