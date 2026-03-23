@@ -12,6 +12,8 @@
 #define NDEBUG
 #endif
 
+#include <iomanip>
+
 extern VirtualMemory vmem;
 extern uint8_t warmup_complete[NUM_CPUS];
 
@@ -44,14 +46,6 @@ void CACHE::handle_fill()
       for (auto ret : fill_mshr->to_return)
         ret->return_data(&(*fill_mshr));
     }
-	else if (NAME == "LLC") {
-	  // LLC bypass: no allocation (filllike_miss already skipped it),
-	  // but data from lower memory is in fill_mshr->data, so we still
-	  // need to satisfy all waiting upper-level requests.
-	  for (auto ret : fill_mshr->to_return)
-		ret->return_data(&(*fill_mshr));
-	  // Note: we DON'T touch block[...], no eviction, no fill.
-	}
 
     MSHR.erase(fill_mshr);
     writes_available_this_cycle--;
@@ -181,6 +175,32 @@ void CACHE::readlike_hit(std::size_t set, std::size_t way, PACKET& handle_pkt)
     std::cout << " cycle: " << current_cycle << std::endl;
   });
 
+  // ---- DEBUG: track one specific physical address ----
+	const uint64_t WATCH_PADDR = 0x320adc2;  // <----- your target PAddr
+	const uint64_t WATCH_PADDR2 = 0xdab5ed;
+	uint64_t line_addr = handle_pkt.address >> OFFSET_BITS;
+
+	if (line_addr == WATCH_PADDR || line_addr == WATCH_PADDR2 || current_cycle==196549539) {
+		string TYPE_NAME;
+		if (handle_pkt.type == LOAD)
+			TYPE_NAME = "LOAD";
+		else if (handle_pkt.type == RFO)
+			TYPE_NAME = "RFO";
+		else if (handle_pkt.type == PREFETCH)
+			TYPE_NAME = "PF";
+		else if (handle_pkt.type == WRITEBACK)
+			TYPE_NAME = "WB";
+		else if (handle_pkt.type == TRANSLATION)
+			TYPE_NAME = "TL";
+
+		std::cout << "cache.cc [" <<setw(8)<< NAME << "] "<<TYPE_NAME<<"_HIT"
+			      << " addr=" << std::hex << line_addr
+			      << " instr_id=" << std::dec << handle_pkt.instr_id
+			      << " current_cycle=" << current_cycle
+			      << std::endl;
+	}
+  // ------------------------------------------------------
+
   BLOCK& hit_block = block[set * NUM_WAY + way];
 
   handle_pkt.data = hit_block.data;
@@ -219,6 +239,32 @@ bool CACHE::readlike_miss(PACKET& handle_pkt)
     std::cout << " type: " << +handle_pkt.type;
     std::cout << " cycle: " << current_cycle << std::endl;
   });
+
+  // ---- DEBUG: track one specific physical address ----
+	const uint64_t WATCH_PADDR = 0x320adc2;  // <----- your target PAddr
+	const uint64_t WATCH_PADDR2 = 0xdab5ed;
+	uint64_t line_addr = handle_pkt.address >> OFFSET_BITS;
+
+	if (line_addr == WATCH_PADDR || line_addr == WATCH_PADDR2 || current_cycle==196549539) {
+		string TYPE_NAME;
+		if (handle_pkt.type == LOAD)
+			TYPE_NAME = "LOAD";
+		else if (handle_pkt.type == RFO)
+			TYPE_NAME = "RFO";
+		else if (handle_pkt.type == PREFETCH)
+			TYPE_NAME = "PF";
+		else if (handle_pkt.type == WRITEBACK)
+			TYPE_NAME = "WB";
+		else if (handle_pkt.type == TRANSLATION)
+			TYPE_NAME = "TL";
+
+		std::cout << "cache.cc ["<<setw(8)<< NAME << "] "<<TYPE_NAME<<"_MISS"
+		          << " addr=" << std::hex << line_addr
+		          << " instr_id=" << std::dec << handle_pkt.instr_id
+		          << " current_cycle=" << current_cycle
+		          << std::endl;
+	}
+  // ------------------------------------------------------
 
   // check mshr
   auto mshr_entry = std::find_if(MSHR.begin(), MSHR.end(), eq_addr<PACKET>(handle_pkt.address, OFFSET_BITS));
@@ -284,7 +330,8 @@ bool CACHE::readlike_miss(PACKET& handle_pkt)
 
   return true;
 }
-
+uint32_t total_PF_latency = 0, PF_cases=0, avg_PF_latency;
+uint32_t total_load_latency = 0, load_cases=0, avg_load_latency=0;
 bool CACHE::filllike_miss(std::size_t set, std::size_t way, PACKET& handle_pkt)
 {
   DP(if (warmup_complete[handle_pkt.cpu]) {
@@ -295,8 +342,59 @@ bool CACHE::filllike_miss(std::size_t set, std::size_t way, PACKET& handle_pkt)
     std::cout << " type: " << +handle_pkt.type;
     std::cout << " cycle: " << current_cycle << std::endl;
   });
+  
+  const uint64_t WATCH_PADDR = 0x320adc2;
+  const uint64_t WATCH_PADDR2 = 0xdab5ed;
+  uint64_t line_addr = handle_pkt.address >> OFFSET_BITS;
 
-  bool bypass = (NAME == "LLC" && way == NUM_WAY);
+  if(warmup_complete[handle_pkt.cpu] && (handle_pkt.cycle_enqueued != 0)){
+	if(handle_pkt.type==LOAD)  {
+		total_load_latency += current_cycle - handle_pkt.cycle_enqueued;
+		load_cases++;
+		avg_load_latency = total_load_latency/load_cases;
+		
+	}
+	if(handle_pkt.type==PREFETCH) {
+		total_PF_latency += current_cycle - handle_pkt.cycle_enqueued;
+		PF_cases++;
+		avg_PF_latency = total_PF_latency/PF_cases;
+	} 
+	
+  }
+  
+  if (line_addr == WATCH_PADDR || line_addr == WATCH_PADDR2 || current_cycle==196549539) {
+		string TYPE_NAME;
+		if (handle_pkt.type == LOAD)
+			TYPE_NAME = "LOAD";
+		else if (handle_pkt.type == RFO)
+			TYPE_NAME = "RFO";
+		else if (handle_pkt.type == PREFETCH)
+			TYPE_NAME = "PF";
+		else if (handle_pkt.type == WRITEBACK)
+			TYPE_NAME = "WB";
+		else if (handle_pkt.type == TRANSLATION)
+			TYPE_NAME = "TL";
+
+
+
+		std::cout << "cache.cc [" <<setw(8)<< NAME << "] "<<TYPE_NAME<<"_FILL"
+		          << " addr=" << std::hex << line_addr
+		          << " cycle_enqueued=" << std::dec << handle_pkt.cycle_enqueued
+		          << " current_cycle=" << current_cycle
+				  << " warmup_complete:"<<int(warmup_complete[handle_pkt.cpu])
+		          << " latency=" << (current_cycle - handle_pkt.cycle_enqueued)
+		          << std::endl;
+		std::cout <<" avg_load_latency:"<<avg_load_latency<<" total_load_latency:"<<total_load_latency<<" avg_PF_latency:"<<avg_PF_latency<<" total_PF_latency:"
+		<<total_PF_latency;
+		if(load_cases!=0){
+			cout<<" total_latency:"<<((total_load_latency+total_PF_latency)/(load_cases+PF_cases))<<endl;
+		}
+		else{
+			cout<<endl;
+		}
+  }
+  
+  bool bypass = (way == NUM_WAY);
 #ifndef LLC_BYPASS
   assert(!bypass);
 #endif

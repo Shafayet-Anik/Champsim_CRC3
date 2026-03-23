@@ -44,14 +44,6 @@ void CACHE::handle_fill()
       for (auto ret : fill_mshr->to_return)
         ret->return_data(&(*fill_mshr));
     }
-	else if (NAME == "LLC") {
-	  // LLC bypass: no allocation (filllike_miss already skipped it),
-	  // but data from lower memory is in fill_mshr->data, so we still
-	  // need to satisfy all waiting upper-level requests.
-	  for (auto ret : fill_mshr->to_return)
-		ret->return_data(&(*fill_mshr));
-	  // Note: we DON'T touch block[...], no eviction, no fill.
-	}
 
     MSHR.erase(fill_mshr);
     writes_available_this_cycle--;
@@ -296,7 +288,7 @@ bool CACHE::filllike_miss(std::size_t set, std::size_t way, PACKET& handle_pkt)
     std::cout << " cycle: " << current_cycle << std::endl;
   });
 
-  bool bypass = (NAME == "LLC" && way == NUM_WAY);
+  bool bypass = (way == NUM_WAY);
 #ifndef LLC_BYPASS
   assert(!bypass);
 #endif

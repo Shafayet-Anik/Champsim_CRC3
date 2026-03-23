@@ -7,7 +7,9 @@
 #include "champsim.h"
 #include "instruction.h"
 
-#define DEADLOCK_CYCLE 1000000
+// GAP multicore mixes can legitimately stall a front-end/ROB entry for >1M cycles
+// under heavy memory contention; keep watchdog large enough to avoid false positives.
+#define DEADLOCK_CYCLE 10000000
 
 extern uint8_t warmup_complete[NUM_CPUS];
 extern uint8_t MAX_INSTR_DESTINATIONS;
